@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Showing Pixel and Tile Coordinates</title>
+  <meta name="viewport" content="initial-scale=1.0">
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <h3>Bản đồ</h3>
+		<div id="floating-panel">
+			<b>Geocode: </b>
+			<input id="address" type="textbox" value="Sydney, NSW" />
+			<input id="submit" type="button" value="Geocode" />
+			<b>Start: </b>
+			<select id="start">
+				<option value="Ngõ gốc đề minh khai">Ngõ gốc đề minh khai</option>
+				<option value="st louis, mo">St Louis</option>
+				<option value="joplin, mo">Joplin, MO</option>
+				<option value="oklahoma city, ok">Oklahoma City</option>
+				<option value="amarillo, tx">Amarillo</option>
+				<option value="gallup, nm">Gallup, NM</option>
+				<option value="flagstaff, az">Flagstaff, AZ</option>
+				<option value="winona, az">Winona</option>
+				<option value="kingman, az">Kingman</option>
+				<option value="barstow, ca">Barstow</option>
+				<option value="san bernardino, ca">San Bernardino</option>
+				<option value="los angeles, ca">Los Angeles</option>
+			</select>
+			<b>End: </b>
+			<select id="end">
+				<option value="Đại học bách khoa hà nội">Đại học bách khoa hà nội</option>
+				<option value="st louis, mo">St Louis</option>
+				<option value="joplin, mo">Joplin, MO</option>
+				<option value="oklahoma city, ok">Oklahoma City</option>
+				<option value="amarillo, tx">Amarillo</option>
+				<option value="gallup, nm">Gallup, NM</option>
+				<option value="flagstaff, az">Flagstaff, AZ</option>
+				<option value="winona, az">Winona</option>
+				<option value="kingman, az">Kingman</option>
+				<option value="barstow, ca">Barstow</option>
+				<option value="san bernardino, ca">San Bernardino</option>
+				<option value="los angeles, ca">Los Angeles</option>
+			</select>
+
+			<b>Mode of Travel: </b>
+			<select id="mode">
+				<option value="DRIVING">Driving</option>
+				<option value="WALKING">Walking</option>
+				<option value="BICYCLING">Bicycling</option>
+				<option value="TRANSIT">Transit</option>
+			</select>
+		</div>
+		<form>
+			<input type="text" id="name" placeholder="Nhập tên địa điểm" />
+			<input type="text" id="latitude" placeholder="Nhập vĩ độ" />
+			<input type="text" id="longitude" placeholder="Nhập kinh độ" />
+			<br /><br />
+			<input type="text" id="content" placeholder="Nhập ghi chú" />
+			<input type="button" value="Thêm địa điểm" onclick="addPlace()" />
+			<input
+				type="button"
+				value="Reset marker"
+				onclick="reloadMarkers()"
+			/>
+			<br />
+		</form>
+  <div id="map"></div>
+  <script src="javascript.js"></script>
+  <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkUOdZ5y7hMm0yrcCQoCvLwzdM6M8s5qk&callback=initMap">
+    </script>
+</body>
+</html>
