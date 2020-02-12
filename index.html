@@ -1,24 +1,189 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<style>
-			/* Set the size of the div element that contains the map */
-			#map {
-				height: 400px;
-				/* The height is 400 pixels */
-				width: 100%;
-				/* The width is the width of the web page */
-			}
-		</style>
+		<link
+			rel="stylesheet"
+			href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+			integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+			crossorigin="anonymous"
+		/>
+		<link rel="stylesheet" href="styles.css" />
+		<script src="index.js"></script>
 	</head>
 
 	<body>
-		<h3>Bản đồ</h3>
-		<div id="floating-panel">
-			<b>Geocode: </b>
-			<input id="address" type="textbox" value="Sydney, NSW" />
-			<input id="submit" type="button" value="Geocode" />
-			<br />
+		<div class="main-container h-100">
+			<div
+				class="main-left h-100 float-left"
+				style="border-right: 1px solid #ccc;"
+			>
+				<header class="main-header pd-8 text-center">
+					<div class="dv3-title">
+						<h6 class="t-20 mb-0" style="color: #750F19">bản đồ</h6>
+					</div>
+				</header>
+				<div
+					id="main-content"
+					class="main-content"
+					style="height: calc(100% - 70px);"
+				>
+					<div class="dv3-tab h-100">
+						<ul class="nav nav-tabs" id="myTab" role="tablist">
+							<li class="nav-item">
+								<a
+									class="nav-link active"
+									data-toggle="tab"
+									href="#etab-findWay"
+									role="tab"
+									aria-selected="true"
+									>Tìm đường</a
+								>
+							</li>
+							<li class="nav-item">
+								<a
+									class="nav-link"
+									data-toggle="tab"
+									href="#etab-drawWay"
+									role="tab"
+									aria-selected="false"
+									>Vẽ đường</a
+								>
+							</li>
+							<li class="nav-item">
+								<a
+									class="nav-link"
+									data-toggle="tab"
+									href="#etab-findPlace"
+									role="tab"
+									aria-selected="false"
+									>Tìm kiếm</a
+								>
+							</li>
+						</ul>
+						<div
+							class="tab-content w-100"
+							id="myTabContent"
+							style="height: calc(100% - 30px);"
+						>
+							<div
+								class="tab-pane h-100 active"
+								id="etab-findWay"
+								style="overflow-y: auto;"
+								role="tabpanel"
+							>
+								<input
+									type="button"
+									value="Chọn điểm trên bản đồ"
+									id="findPlace"
+								/>
+								<br />
+								<input
+									type="text"
+									id="start"
+									placeholder="Nhập điểm đầu"
+								/>
+
+								<input
+									type="text"
+									id="end"
+									placeholder="Nhập điểm cuối"
+								/>
+								<input
+									type="button"
+									id="getWay"
+									value="Tìm đường"
+								/>
+								<br />
+
+								<b>Chế độ di chuyển: </b>
+								<select id="mode">
+									<option value="DRIVING">Lái xe</option>
+									<option value="WALKING">Đi bộ</option>
+									<!-- <option value="BICYCLING">Đi xe đạp</option> -->
+									<option value="TRANSIT"
+										>Phương tiện công cộng</option
+									>
+								</select>
+								<div id="direction-panel"></div>
+							</div>
+							<div
+								class="tab-pane h-100"
+								id="etab-drawWay"
+								style="overflow-y: auto;"
+								role="tabpanel"
+							>
+								<input
+									type="button"
+									value="Draw path with Data"
+									onclick="drawPath()"
+								/>
+								<input
+									type="button"
+									value="Remove path with Data"
+									onclick="removePath(flightPath)"
+								/>
+								<br />
+
+								<br />
+								<input
+									type="button"
+									value="Draw path with Hand"
+									onclick="drawPathWithHand()"
+								/>
+								<input
+									type="button"
+									value="Remove path with Hand"
+									onclick="removePath(poly)"
+								/>
+								<br />
+
+								<br />
+								<input
+									type="button"
+									value="Draw Rectange"
+									onclick="drawRectangle()"
+								/>
+								<input
+									type="button"
+									value="Remove Rectange"
+									onclick="removePath(rectangle)"
+								/>
+								<br />
+							</div>
+							<div
+								class="tab-pane h-100"
+								id="etab-findPlace"
+								style="overflow-y: auto;"
+								role="tabpanel"
+							>
+								<table style="width:100%">
+									<tr>
+										<th style="text-align: center;">STT</th>
+										<th>Tên địa điểm</th>
+									</tr>
+									<tr onclick="centerMap(0)">
+										<td style="text-align: center;">1</td>
+										<td>Lăng chủ tịch</td>
+									</tr>
+									<tr onclick="centerMap(1)">
+										<td style="text-align: center;">2</td>
+										<td>Phủ tây hồ</td>
+									</tr>
+									<tr onclick="centerMap(2)">
+										<td style="text-align: center;">3</td>
+										<td>Thung lũng hoa</td>
+									</tr>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="main-right h-100 float-left">
+				<div id="map" class="w-100 h-100 float-left"></div>
+			</div>
+		</div>
+		<!-- <div id="floating-panel">
 			<input type="button" value="Start" id="findPlace" />
 
 			<input type="text" id="start" />
@@ -81,232 +246,8 @@
 		<br />
 		<br />
 		<input type="button" value="get array lat lng" onclick="makeRegion()" />
-		<br />
+		<br /> -->
 		<!--The div element for the map -->
-		<div id="map"></div>
-		<script
-			async
-			defer
-			src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCkUOdZ5y7hMm0yrcCQoCvLwzdM6M8s5qk&callback=initMap"
-		></script>
-		<script>
-			var map;
-			var directionsRenderer;
-			var directionsService;
-			var westLake = { lat: 21.053225, lng: 105.824852 };
-			var places = [
-				["Lăng chủ tịch", 21.036873, 105.834979, 4],
-				["Phủ tây hồ", 21.055928, 105.819733, 5],
-				["Thung lũng hoa", 21.074799, 105.819014, 3]
-			];
-			var markers = [];
-			var info = [
-				'<div id="content">' +
-					'<div id="siteNotice">' +
-					"</div>" +
-					'<h1 id="firstHeading" class="firstHeading">Lăng chủ tịch</h1>' +
-					'<div id="bodyContent">' +
-					'<p>Vietnamese leader Ho Chi Minh"s body is on display in this mausoleum & historic site.</p>' +
-					"</div>" +
-					"</div>",
-				'<div id="content">' +
-					'<div id="siteNotice">' +
-					"</div>" +
-					'<h1 id="firstHeading" class="firstHeading">Lăng chủ tịch</h1>' +
-					'<div id="bodyContent">' +
-					'<p>Vietnamese leader Ho Chi Minh"s body is on display in this mausoleum & historic site.</p>' +
-					"</div>" +
-					"</div>",
-				'<div id="content">' +
-					'<div id="siteNotice">' +
-					"</div>" +
-					'<h1 id="firstHeading" class="firstHeading">Lăng chủ tịch</h1>' +
-					'<div id="bodyContent">' +
-					'<p>Vietnamese leader Ho Chi Minh"s body is on display in this mausoleum & historic site.</p>' +
-					"</div>" +
-					"</div>"
-			];
-
-			// Initialize and add the map
-			function reloadMarkers() {
-				// Loop through markers and set map to null for each
-				for (var i = 0; i < markers.length; i++) {
-					markers[i].setMap(null);
-				}
-
-				// Reset the markers array
-				markers = [];
-
-				// Call set markers to re-add markers
-				setMarkers(places);
-			}
-			s;
-			function addPlace() {
-				const name = document.getElementById("name").value;
-				const lat = document.getElementById("latitude").value;
-				const lng = document.getElementById("longitude").value;
-				let content = document.getElementById("content").value;
-				var myLatLng = new google.maps.LatLng(lat, lng);
-				content =
-					'<div id="content">' +
-					'<div id="siteNotice">' +
-					"</div>" +
-					'<h1 id="firstHeading" class="firstHeading">' +
-					name +
-					"</h1>" +
-					'<div id="bodyContent">' +
-					"<p>" +
-					content +
-					"</p>" +
-					"</div>" +
-					"</div>";
-				const infowindow = new google.maps.InfoWindow({
-					content,
-					maxWidth: 300
-				});
-				const marker = new google.maps.Marker({
-					position: myLatLng,
-					map: map,
-					animation: google.maps.Animation.DROP,
-					title: name,
-					zIndex: 1
-				});
-				marker.addListener("click", function() {
-					infowindow.open(map, marker);
-				});
-				marker.addListener("dblclick", function() {
-					marker.setMap(null);
-				});
-				markers.push(marker);
-			}
-
-			function addMarker(location) {
-				var marker = new google.maps.Marker({
-					position: location,
-					animation: google.maps.Animation.DROP,
-					map: map
-				});
-				marker.addListener("dblclick", function() {
-					marker.setMap(null);
-				});
-				markers.push(marker);
-			}
-
-			function setMarkers(locations) {
-				for (var i = 0; i < locations.length; i++) {
-					var place = locations[i];
-					const infowindow = new google.maps.InfoWindow({
-						content: info[i],
-						maxWidth: 300
-					});
-					const marker = new google.maps.Marker({
-						position: { lat: place[1], lng: place[2] },
-						map: map,
-						animation: google.maps.Animation.DROP,
-						title: place[0],
-						zIndex: place[3]
-					});
-					marker.addListener("click", function() {
-						infowindow.open(map, marker);
-					});
-					marker.addListener("dblclick", function() {
-						marker.setMap(null);
-					});
-					markers.push(marker);
-				}
-			}
-
-			function initMap() {
-				map = new google.maps.Map(document.getElementById("map"), {
-					zoom: 13,
-					center: westLake
-				});
-
-				directionsService = new google.maps.DirectionsService();
-				directionsRenderer = new google.maps.DirectionsRenderer({
-					draggable: true,
-					map: map
-				});
-				map.addListener("click", function(event) {
-					addMarker(event.latLng);
-				});
-				setMarkers(places);
-				// The marker, positioned at Uluru
-				var geocoder = new google.maps.Geocoder();
-
-				directionsRenderer.setMap(map);
-
-				var onChangeHandler = function() {
-					calculateAndDisplayRoute(
-						directionsService,
-						directionsRenderer
-					);
-				};
-				document
-					.getElementById("start")
-					.addEventListener("change", onChangeHandler);
-				document
-					.getElementById("end")
-					.addEventListener("change", onChangeHandler);
-				document
-					.getElementById("mode")
-					.addEventListener("change", onChangeHandler);
-				document
-					.getElementById("submit")
-					.addEventListener("click", function() {
-						geocodeAddress(geocoder, map);
-					});
-			}
-
-			function geocodeAddress(geocoder, resultsMap) {
-				var address = document.getElementById("address").value;
-				geocoder.geocode(
-					{
-						address: address
-					},
-					function(results, status) {
-						if (status === "OK") {
-							resultsMap.setCenter(results[0].geometry.location);
-							var marker = new google.maps.Marker({
-								map: resultsMap,
-								position: results[0].geometry.location
-							});
-						} else {
-							alert(
-								"Geocode was not successful for the following reason: " +
-									status
-							);
-						}
-					}
-				);
-			}
-
-			function calculateAndDisplayRoute(
-				directionsService,
-				directionsRenderer
-			) {
-				directionsService.route(
-					{
-						origin: {
-							query: document.getElementById("start").value
-						},
-						destination: {
-							query: document.getElementById("end").value
-						},
-						travelMode: "DRIVING"
-					},
-					function(response, status) {
-						if (status === "OK") {
-							directionsRenderer.setDirections(response);
-						} else {
-							window.alert(
-								"Directions request failed due to " + status
-							);
-						}
-					}
-				);
-			}
-		</script>
 		<!--Load the API from the specified URL
     * The async attribute allows the browser to render the page while the API loads
     * The key parameter will contain your own API key (which is not needed for this tutorial)
@@ -316,6 +257,22 @@
 			async
 			defer
 			src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDO6xwXdudsBWYD1asUmmLtT9Sj9XdXufA&callback=initMap"
+		></script>
+
+		<script
+			src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+			integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+			crossorigin="anonymous"
+		></script>
+		<script
+			src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+			integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+			crossorigin="anonymous"
+		></script>
+		<script
+			src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+			integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+			crossorigin="anonymous"
 		></script>
 	</body>
 </html>
