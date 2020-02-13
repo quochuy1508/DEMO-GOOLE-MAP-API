@@ -112,17 +112,13 @@
 								style="overflow-y: auto;"
 								role="tabpanel"
 							>
-								<input
-									type="button"
-									value="Draw path with Data"
-									onclick="drawPath()"
-								/>
-								<input
-									type="button"
-									value="Remove path with Data"
-									onclick="removePath(flightPath)"
-								/>
-								<br />
+								<b>Chế độ bản đồ</b>
+								<select id="map-type">
+									<option value="roadmap">Đường đi</option>
+									<option value="satellite">Vệ tinh</option>
+									<option value="hybrid">Hỗn hợp</option>
+									<option value="terrain">Địa hình</option>
+								</select>
 
 								<br />
 								<input
@@ -149,6 +145,26 @@
 									onclick="removePath(rectangle)"
 								/>
 								<br />
+								<input
+									type="button"
+									value="Distance"
+									onclick="showDistance()"
+								/>
+								<br />
+								<input
+									type="checkbox"
+									name="SlideSea"
+									id="sea"
+								/>
+								<label for="SlideSea"> Sạt lở bở biển</label
+								><br />
+								<input
+									type="checkbox"
+									name="SlideRiver"
+									id="river"
+								/>
+								<label for="SlideRiver"> Sạt lở bở sông</label
+								><br />
 							</div>
 							<div
 								class="tab-pane h-100"
@@ -256,7 +272,7 @@
 		<script
 			async
 			defer
-			src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDO6xwXdudsBWYD1asUmmLtT9Sj9XdXufA&callback=initMap"
+			src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDO6xwXdudsBWYD1asUmmLtT9Sj9XdXufA&callback=initMap&libraries=geometry"
 		></script>
 
 		<script

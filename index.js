@@ -2,14 +2,13 @@ var map;
 var flightPath;
 var poly;
 var rectangle;
+var pathDraw = [];
 var westLake = {
 	lat: 21.053225,
 	lng: 105.824852
 };
 var arrayRegion = [];
 var arrayMarker = [];
-var listenerStart;
-var listenerEnd;
 var end, start;
 var places = [
 	["Lăng chủ tịch", 21.036873, 105.834979, 4],
@@ -18,7 +17,7 @@ var places = [
 ];
 var markers = [];
 var tipObj = [null, null, null];
-var offset = { x: 5, y: -60 };
+var offset = { x: -50, y: -65 };
 var info = [
 	'<div id="content">' +
 		'<div id="siteNotice">' +
@@ -124,20 +123,30 @@ function setMarkers(locations) {
 			},
 			map: map,
 			animation: google.maps.Animation.DROP,
-			zIndex: place[3]
+			zIndex: place[3],
+			icon:
+				"http://satlodbscl.phongchongthientai.vn/Images/Customers/map/dbnguyhiemda.png"
 		});
-		console.log(i);
-		marker.addListener("mouseover", function(e) {
-			injectTooltip(e, place[0], i);
+		const index = i;
+		const currentPlace = place[0];
+		let mouseOverEvent = marker.addListener("mouseover", function(e) {
+			injectTooltip(e, currentPlace, index);
 		});
 		marker.addListener("mousemove", function(e) {
-			moveTooltip(e, i);
+			moveTooltip(e, index);
 		});
 		marker.addListener("mouseout", function(e) {
-			deleteTooltip(e, i);
+			deleteTooltip(e, index);
 		});
-		marker.addListener("click", function() {
+		marker.addListener("click", function(e) {
 			infowindow.open(map, marker);
+			google.maps.event.removeListener(mouseOverEvent);
+			deleteTooltip(e, index);
+		});
+		infowindow.addListener("closeclick", function(e) {
+			mouseOverEvent = marker.addListener("mouseover", function(e) {
+				injectTooltip(e, currentPlace, index);
+			});
 		});
 		marker.addListener("dblclick", function() {
 			marker.setMap(null);
@@ -170,7 +179,9 @@ function initMap() {
 	setMarkers(places);
 	// The marker, positioned at Uluru
 	var geocoder = new google.maps.Geocoder();
-
+	let checkSlideSea = false;
+	let checkSlideRiver = false;
+	let checkBox;
 	directionsRenderer.setMap(map);
 	directionsRenderer.setPanel(document.getElementById("direction-panel"));
 
@@ -190,6 +201,31 @@ function initMap() {
 
 	document.getElementById("getWay").addEventListener("click", function() {
 		getWay(directionsService, directionsRenderer);
+	});
+	document.getElementById("map-type").addEventListener("change", function() {
+		let type = document.getElementById("map-type").value;
+		map.setMapTypeId(type);
+	});
+	document.getElementById("sea").addEventListener("click", function() {
+		checkBox = document.getElementById("sea");
+		console.log("checkBox.checked: ", checkBox.checked);
+		if (checkBox.checked === true) {
+			let checkSlideSea = true;
+			drawLandslide(checkSlideSea, checkSlideRiver, map);
+		} else {
+			hidenLandslide();
+		}
+	});
+
+	document.getElementById("river").addEventListener("click", function() {
+		checkBox = document.getElementById("river");
+		console.log("checkBox.checked: ", checkBox.checked);
+		if (checkBox.checked === true) {
+			let checkSlideRiver = true;
+			drawLandslide(checkSlideSea, checkSlideRiver, map);
+		} else {
+			hidenLandslide();
+		}
 	});
 }
 
@@ -271,6 +307,7 @@ function drawingThePathWithLatLong(LatLongArray, map) {
 		strokeOpacity: 1.0,
 		strokeWeight: 2
 	});
+	pathDraw.push(flightPath);
 	flightPath.setMap(map);
 }
 
@@ -530,7 +567,8 @@ function getWay(directionsService, directionsRenderer) {
 }
 
 function getOrigin(geocoder) {
-	listenerStart = map.addListener("click", function(event) {
+	google.maps.event.addListenerOnce(map, "click", function(event) {
+		console.log(map.getBounds());
 		getOriginLatLng(event.latLng, geocoder);
 	});
 }
@@ -550,9 +588,7 @@ function getOriginLatLng(location, geocoder) {
     }
   }); */
 	start = location;
-
-	google.maps.event.removeListener(listenerStart);
-	listenerEnd = map.addListener("click", function(event) {
+	google.maps.event.addListenerOnce(map, "click", function(event) {
 		getDestinationLatLng(event.latLng, geocoder);
 	});
 }
@@ -574,7 +610,6 @@ function getDestinationLatLng(location, geocoder) {
     }
   }); */
 	end = location;
-	google.maps.event.removeListener(listenerEnd);
 	calculateAndDisplayRouteWidthLatLong(
 		directionsService,
 		directionsRenderer,
@@ -593,9 +628,7 @@ function centerMap(index) {
 }
 
 function injectTooltip(event, data, index) {
-	console.log(index);
 	if (!tipObj[index] && event) {
-		console.log(event);
 		//create the tooltip object
 		tipObj[index] = document.createElement("div");
 		tipObj[index].style.width = "200px";
@@ -605,6 +638,7 @@ function injectTooltip(event, data, index) {
 		tipObj[index].style.padding = "10px";
 		tipObj[index].style.fontFamily = "Arial,Helvetica";
 		tipObj[index].style.textAlign = "center";
+		tipObj[index].style.zIndex = "0";
 		tipObj[index].innerHTML = data;
 
 		//position it
@@ -615,11 +649,35 @@ function injectTooltip(event, data, index) {
 			event.tb.clientX + window.scrollX + offset.x + "px";
 		//add it to the body
 		document.body.appendChild(tipObj[index]);
+		const top = event.tb.clientY + window.scrollY + offset.y;
+		const left = event.tb.clientX + window.scrollX + offset.x;
+		const southWest = {
+			x: left - 420,
+			y: top - 50
+		};
+		const northEast = {
+			x: left - 620,
+			y: top
+		};
+		console.log(top);
+		console.log(left);
+		console.log(southWest);
+		console.log(northEast);
+		const bounds = new google.maps.LatLngBounds(
+			point2LatLng(southWest, map),
+			point2LatLng(northEast, map)
+		);
+		if (
+			!map.getBounds().contains(point2LatLng(southWest, map)) ||
+			!map.getBounds().contains(point2LatLng(northEast, map))
+		)
+			map.panToBounds(bounds);
 	}
 }
 
 function moveTooltip(event, index) {
 	if (tipObj[index] && event) {
+		console.log(event);
 		//position it
 		tipObj[index].style.top =
 			event.tb.clientY + window.scrollY + offset.y + "px";
@@ -634,4 +692,243 @@ function deleteTooltip(event, index) {
 		document.body.removeChild(tipObj[index]);
 		tipObj[index] = null;
 	}
+}
+
+function point2LatLng(point, map) {
+	var topRight = map
+		.getProjection()
+		.fromLatLngToPoint(map.getBounds().getNorthEast());
+	var bottomLeft = map
+		.getProjection()
+		.fromLatLngToPoint(map.getBounds().getSouthWest());
+	var scale = Math.pow(2, map.getZoom());
+	var worldPoint = new google.maps.Point(
+		point.x / scale + bottomLeft.x,
+		point.y / scale + topRight.y
+	);
+	return map.getProjection().fromPointToLatLng(worldPoint);
+}
+
+function showDistance() {
+	let latOfA, latOfB, lngOfA, lngOfB;
+	let x, y;
+	const a = map.addListener("click", function(event1) {
+		x = event1.latLng;
+		latOfA = event1.latLng.lat();
+		lngOfA = event1.latLng.lng();
+		google.maps.event.removeListener(a);
+		const b = map.addListener("click", function(event2) {
+			y = event2.latLng;
+			latOfB = event2.latLng.lat();
+			lngOfB = event2.latLng.lng();
+			google.maps.event.removeListener(b);
+			console.log("latOfA - lngOfA = " + latOfA + "-" + lngOfA);
+			console.log("latOfB - lngOfB = " + latOfB + "-" + lngOfB);
+
+			let distanceInMeters = google.maps.geometry.spherical.computeDistanceBetween(
+				x,
+				y
+			);
+
+			/* caculationDistanceOfTwoPoint(latOfA, lngOfA, latOfB, lngOfB); */
+
+			console.log("distanceInMeters: ", distanceInMeters);
+		});
+	});
+}
+
+function drawLandslide(modeSlideSea, modeSlideRiver, map) {
+	map.setMapTypeId("satellite");
+	const arraySlideSea = [
+		[
+			{
+				lat: 20.704926774918633,
+				lng: 106.7628907283535
+			},
+			{
+				lat: 20.701394097130002,
+				lng: 106.75053110921287
+			},
+			{
+				lat: 20.690795569932423,
+				lng: 106.73714152181053
+			},
+			{
+				lat: 20.684050667052677,
+				lng: 106.73439493977928
+			}
+		],
+		[
+			{
+				lat: 20.6150620258162,
+				lng: 106.69310694415222
+			},
+			{
+				lat: 20.609277818108197,
+				lng: 106.68040400225769
+			},
+			{
+				lat: 20.60124383199137,
+				lng: 106.67319422442566
+			}
+			/*       {
+        lat: 20.600922463737376,
+        lng: 106.66289454180847
+      }, */
+		],
+		[
+			{
+				lat: 20.72523945615103,
+				lng: 106.79101596600033
+			},
+			{
+				lat: 20.734551235988178,
+				lng: 106.78517947918392
+			},
+			{
+				lat: 20.748838887567352,
+				lng: 106.77951465374447
+			},
+			{
+				lat: 20.759112319699287,
+				lng: 106.77659641033627
+			}
+		]
+	];
+	const arraySlideRiver = [
+		[
+			{ lat: 20.286822471089906, lng: 106.56004394095612 },
+			{ lat: 20.284457574628053, lng: 106.56185711425019 },
+			{ lat: 20.283904083011958, lng: 106.56269396346283 }
+		],
+		[
+			{ lat: 20.304885288445917, lng: 106.5401133928097 },
+			{ lat: 20.302148362394263, lng: 106.54388994310267 },
+			{ lat: 20.300256635236543, lng: 106.54680818651087 },
+			{ lat: 20.298445385455803, lng: 106.54921144578822 }
+		],
+		[
+			{ lat: 20.299572437504963, lng: 106.53878292882615 },
+			{ lat: 20.295507140464434, lng: 106.5424307330864 },
+			{ lat: 20.29236753113212, lng: 106.54625019872361 },
+			{ lat: 20.28942912117957, lng: 106.54976925695115 },
+			{ lat: 20.286691922062207, lng: 106.55311665380174 }
+		],
+		[
+			{ lat: 20.273251268005104, lng: 106.56603290310885 },
+			{ lat: 20.271600731530164, lng: 106.568221585665 },
+			{ lat: 20.269628116121673, lng: 106.56985236874606 },
+			{ lat: 20.26910476496661, lng: 106.57049609890963 },
+			{ lat: 20.266769792151273, lng: 106.57324268094088 },
+			{ lat: 20.26375037865746, lng: 106.57581760159518 },
+			{ lat: 20.257469810421238, lng: 106.58058120480563 }
+		],
+		[
+			{ lat: 20.244103388912656, lng: 106.58145201255758 },
+			{ lat: 20.238587077421364, lng: 106.58316862632711 },
+			{ lat: 20.235647648989804, lng: 106.58437025596578 },
+			{ lat: 20.230533716360945, lng: 106.58458483268697 },
+			{ lat: 20.22469476871172, lng: 106.58439927412205 },
+			{ lat: 20.217969640118064, lng: 106.58229642225437 }
+		]
+	];
+
+	if (modeSlideSea) {
+		arraySlideSea.forEach((element, index) => {
+			let myMiddleLatLng;
+			let marker;
+			let length = Math.floor(element.length / 2);
+			let image =
+				"http://satlodbscl.phongchongthientai.vn/Images/Customers/map/dbnguyhiemda.png";
+			if (element.length % 2 === 0) {
+				let myNextLatLng = new google.maps.LatLng(
+					arraySlideSea[index][length]
+				);
+				let myLastLatLng = new google.maps.LatLng(
+					arraySlideSea[index][length - 1]
+				);
+				myMiddleLatLng = google.maps.geometry.spherical.interpolate(
+					myLastLatLng,
+					myNextLatLng,
+					0.5
+				);
+				console.log("myMiddleLatLng: ", myMiddleLatLng);
+				marker = new google.maps.Marker({
+					position: myMiddleLatLng,
+					map: map,
+					icon: image,
+					title: "Hello World!"
+				});
+			} else {
+				myMiddleLatLng = new google.maps.LatLng(
+					arraySlideSea[index][length]
+				);
+
+				marker = new google.maps.Marker({
+					position: myMiddleLatLng,
+					map: map,
+					icon: image,
+					title: "Hello World!"
+				});
+				marker.setMap(map);
+			}
+			arrayMarker.push(marker);
+
+			drawingThePathWithLatLong(element, map);
+		});
+	}
+
+	if (modeSlideRiver) {
+		arraySlideRiver.forEach((element, index) => {
+			let myMiddleLatLng;
+			let marker;
+			let length = Math.floor(element.length / 2);
+			let image =
+				"http://satlodbscl.phongchongthientai.vn/Images/Customers/map/binhthuong.png";
+			if (element.length % 2 === 0) {
+				let myNextLatLng = new google.maps.LatLng(
+					arraySlideRiver[index][length]
+				);
+				let myLastLatLng = new google.maps.LatLng(
+					arraySlideRiver[index][length - 1]
+				);
+				myMiddleLatLng = google.maps.geometry.spherical.interpolate(
+					myLastLatLng,
+					myNextLatLng,
+					0.5
+				);
+				console.log("myMiddleLatLng: ", myMiddleLatLng);
+				marker = new google.maps.Marker({
+					position: myMiddleLatLng,
+					map: map,
+					icon: image,
+					title: "Hello World!"
+				});
+			} else {
+				myMiddleLatLng = new google.maps.LatLng(
+					arraySlideRiver[index][length]
+				);
+
+				marker = new google.maps.Marker({
+					position: myMiddleLatLng,
+					map: map,
+					icon: image,
+					title: "Hello World!"
+				});
+				marker.setMap(map);
+			}
+			arrayMarker.push(marker);
+
+			drawingThePathWithLatLong(element, map);
+		});
+	}
+}
+
+function hidenLandslide() {
+	arrayMarker.forEach((element, index) => {
+		arrayMarker[index].setMap(null);
+	});
+	pathDraw.forEach((element, index) => {
+		pathDraw[index].setMap(null);
+	});
 }
