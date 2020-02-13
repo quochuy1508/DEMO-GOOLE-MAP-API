@@ -9,6 +9,7 @@ var westLake = {
 };
 var arrayRegion = [];
 var arrayMarker = [];
+var arrayRenderer = [];
 var end, start;
 var places = [
 	["Lăng chủ tịch", 21.036873, 105.834979, 4],
@@ -18,6 +19,10 @@ var places = [
 var markers = [];
 var tipObj = [null, null, null];
 var offset = { x: -50, y: -65 };
+let pathDrawSea = [];
+let pathDrawRiver = [];
+let arrayMarkerSea = [];
+let arrayMarkerRiver = [];
 var info = [
 	'<div id="content">' +
 		'<div id="siteNotice">' +
@@ -85,7 +90,6 @@ function addPlace() {
 	const marker = new google.maps.Marker({
 		position: myLatLng,
 		map: map,
-		animation: google.maps.Animation.DROP,
 		title: name,
 		zIndex: 1
 	});
@@ -122,7 +126,6 @@ function setMarkers(locations) {
 				lng: place[2]
 			},
 			map: map,
-			animation: google.maps.Animation.DROP,
 			zIndex: place[3],
 			icon:
 				"http://satlodbscl.phongchongthientai.vn/Images/Customers/map/dbnguyhiemda.png"
@@ -157,7 +160,7 @@ function setMarkers(locations) {
 
 function initMap() {
 	map = new google.maps.Map(document.getElementById("map"), {
-		zoom: 15,
+		zoom: 12,
 		center: westLake
 	});
 
@@ -166,9 +169,52 @@ function initMap() {
 		draggable: true,
 		map: map
 	});
-	// map.addListener("click", function(event) {
-	// 	addMarker(event.latLng);
+
+	var lineSymbol = {
+		path: "M 0,-1 0,1",
+		strokeOpacity: 1,
+		scale: 2
+	};
+	var drawingManager = new google.maps.drawing.DrawingManager({
+		drawingControl: true,
+		drawingControlOptions: {
+			position: google.maps.ControlPosition.RIGHT_CENTER,
+			drawingModes: ["polyline"]
+		},
+		polylineOptions: {
+			strokeOpacity: 1,
+			icons: [
+				{
+					icon: lineSymbol,
+					offset: "0",
+					repeat: "10px"
+				}
+			]
+		}
+	});
+	drawingManager.setMap(map);
+	google.maps.event.addListener(drawingManager, "polylinecomplete", function(
+		polyline
+	) {
+		console.log(polyline);
+	});
+
+	// google.maps.event.addListener(drawingManager, "overlaycomplete", function(
+	// 	event
+	// ) {
+	// 	if (event.type == "polyline") {
+	// 		console.log(polyline);
+	// 	}
 	// });
+	map.addListener("mousemove", function(e) {
+		document.getElementById("latLng").innerHTML = `${Math.round(
+			e.latLng.lng() * 10000
+		) / 10000}, ${Math.round(e.latLng.lat() * 10000) / 10000}`;
+	});
+
+	map.addListener("mouseout", function(e) {
+		document.getElementById("latLng").innerHTML = "";
+	});
 	/*   map.addListener("click", function(event) {
       var start = event.latLng;
       map.addListener
@@ -183,7 +229,6 @@ function initMap() {
 	let checkSlideRiver = false;
 	let checkBox;
 	directionsRenderer.setMap(map);
-	directionsRenderer.setPanel(document.getElementById("direction-panel"));
 
 	var onChangeHandler = function() {
 		calculateAndDisplayRoute(
@@ -211,9 +256,18 @@ function initMap() {
 		console.log("checkBox.checked: ", checkBox.checked);
 		if (checkBox.checked === true) {
 			let checkSlideSea = true;
-			drawLandslide(checkSlideSea, checkSlideRiver, map);
+			const obj = drawLandslide(
+				checkSlideSea,
+				checkSlideRiver,
+				map,
+				arrayMarkerSea,
+				pathDrawSea
+			);
+			arrayMarkerSea = obj.arrayMarker;
+			map = obj.map;
+			pathDrawSea = obj.pathDraw;
 		} else {
-			hidenLandslide();
+			hidenLandslide(arrayMarkerSea, pathDrawSea);
 		}
 	});
 
@@ -222,9 +276,18 @@ function initMap() {
 		console.log("checkBox.checked: ", checkBox.checked);
 		if (checkBox.checked === true) {
 			let checkSlideRiver = true;
-			drawLandslide(checkSlideSea, checkSlideRiver, map);
+			const obj = drawLandslide(
+				checkSlideSea,
+				checkSlideRiver,
+				map,
+				arrayMarkerRiver,
+				pathDrawRiver
+			);
+			arrayMarkerRiver = obj.arrayMarker;
+			map = obj.map;
+			pathDrawRiver = obj.pathDraw;
 		} else {
-			hidenLandslide();
+			hidenLandslide(arrayMarkerRiver, pathDrawRiver);
 		}
 	});
 }
@@ -258,16 +321,34 @@ function calculateAndDisplayRoute(
 	start,
 	end
 ) {
+	document.getElementById("direction-panel").innerHTML = "";
+	for (var i = 0; i < arrayRenderer.length; i++) {
+		arrayRenderer[i].setMap(null);
+	}
 	var selectedMode = document.getElementById("mode").value;
 	directionsService.route(
 		{
 			origin: start,
 			destination: end,
-			travelMode: google.maps.TravelMode[selectedMode]
+			travelMode: google.maps.TravelMode[selectedMode],
+			provideRouteAlternatives: true
 		},
 		function(response, status) {
 			if (status === "OK") {
+				console.log("routes abc: ", response);
 				directionsRenderer.setDirections(response);
+				console.log("routes length: ", response.routes.length);
+				for (var i = 0; i < response.routes.length; i++) {
+					const dr = new google.maps.DirectionsRenderer();
+					arrayRenderer.push(dr);
+					dr.setDirections(response);
+					// Tell the DirectionsRenderer which route to display
+					dr.setRouteIndex(i);
+					dr.setMap(map);
+					dr.setPanel(document.getElementById("direction-panel"));
+
+					// Code ommited to display distance and duration
+				}
 			} else {
 				window.alert("Directions request failed due to " + status);
 			}
@@ -281,17 +362,34 @@ function calculateAndDisplayRouteWidthLatLong(
 	start,
 	end
 ) {
+	document.getElementById("direction-panel").innerHTML = "";
+
+	for (var i = 0; i < arrayRenderer.length; i++) {
+		arrayRenderer[i].setMap(null);
+	}
 	var selectedMode = document.getElementById("mode").value;
-	console.log("selectedMode 1: ", selectedMode);
 	directionsService.route(
 		{
 			origin: start,
 			destination: end,
-			travelMode: google.maps.TravelMode[selectedMode]
+			travelMode: google.maps.TravelMode[selectedMode],
+			provideRouteAlternatives: true
 		},
 		function(response, status) {
 			if (status === "OK") {
-				directionsRenderer.setDirections(response);
+				console.log("routes abc: ", response);
+				console.log("routes length: ", response.routes.length);
+				for (var i = 0; i < response.routes.length; i++) {
+					const dr = new google.maps.DirectionsRenderer();
+					arrayRenderer.push(dr);
+					dr.setDirections(response);
+					// Tell the DirectionsRenderer which route to display
+					dr.setRouteIndex(i);
+					dr.setMap(map);
+					dr.setPanel(document.getElementById("direction-panel"));
+
+					// Code ommited to display distance and duration
+				}
 			} else {
 				window.alert("Directions request failed due to " + status);
 			}
@@ -299,7 +397,7 @@ function calculateAndDisplayRouteWidthLatLong(
 	);
 }
 
-function drawingThePathWithLatLong(LatLongArray, map) {
+function drawingThePathWithLatLong(LatLongArray, map, pathDraw) {
 	flightPath = new google.maps.Polyline({
 		path: LatLongArray,
 		geodesic: true,
@@ -309,6 +407,7 @@ function drawingThePathWithLatLong(LatLongArray, map) {
 	});
 	pathDraw.push(flightPath);
 	flightPath.setMap(map);
+	return pathDraw;
 }
 
 function drawPath() {
@@ -474,7 +573,7 @@ function drawPath() {
 			lng: 105.8122477179077
 		}
 	];
-	drawingThePathWithLatLong(arrayPath, map);
+	drawingThePathWithLatLong(arrayPath, map, pathDraw);
 }
 
 function removePath(input) {
@@ -568,8 +667,8 @@ function getWay(directionsService, directionsRenderer) {
 
 function getOrigin(geocoder) {
 	google.maps.event.addListenerOnce(map, "click", function(event) {
-		console.log(map.getBounds());
 		getOriginLatLng(event.latLng, geocoder);
+		addMarker(event.latLng);
 	});
 }
 
@@ -616,6 +715,7 @@ function getDestinationLatLng(location, geocoder) {
 		start,
 		end
 	);
+	reloadMarkers();
 }
 
 function centerMap(index) {
@@ -653,16 +753,12 @@ function injectTooltip(event, data, index) {
 		const left = event.tb.clientX + window.scrollX + offset.x;
 		const southWest = {
 			x: left - 420,
-			y: top - 50
+			y: top + 50
 		};
 		const northEast = {
-			x: left - 620,
+			x: left - 220,
 			y: top
 		};
-		console.log(top);
-		console.log(left);
-		console.log(southWest);
-		console.log(northEast);
 		const bounds = new google.maps.LatLngBounds(
 			point2LatLng(southWest, map),
 			point2LatLng(northEast, map)
@@ -712,32 +808,34 @@ function point2LatLng(point, map) {
 function showDistance() {
 	let latOfA, latOfB, lngOfA, lngOfB;
 	let x, y;
-	const a = map.addListener("click", function(event1) {
+	google.maps.event.addListenerOnce(map, "click", function(event1) {
 		x = event1.latLng;
 		latOfA = event1.latLng.lat();
 		lngOfA = event1.latLng.lng();
-		google.maps.event.removeListener(a);
-		const b = map.addListener("click", function(event2) {
+		google.maps.event.addListenerOnce(map, "click", function(event2) {
 			y = event2.latLng;
 			latOfB = event2.latLng.lat();
 			lngOfB = event2.latLng.lng();
-			google.maps.event.removeListener(b);
-			console.log("latOfA - lngOfA = " + latOfA + "-" + lngOfA);
-			console.log("latOfB - lngOfB = " + latOfB + "-" + lngOfB);
-
 			let distanceInMeters = google.maps.geometry.spherical.computeDistanceBetween(
 				x,
 				y
 			);
 
 			/* caculationDistanceOfTwoPoint(latOfA, lngOfA, latOfB, lngOfB); */
-
+			document.getElementById("distance").innerHTML =
+				Math.floor(distanceInMeters) / 1000 + "km";
 			console.log("distanceInMeters: ", distanceInMeters);
 		});
 	});
 }
 
-function drawLandslide(modeSlideSea, modeSlideRiver, map) {
+function drawLandslide(
+	modeSlideSea,
+	modeSlideRiver,
+	map,
+	arrayMarker,
+	pathDraw
+) {
 	map.setMapTypeId("satellite");
 	const arraySlideSea = [
 		[
@@ -874,7 +972,7 @@ function drawLandslide(modeSlideSea, modeSlideRiver, map) {
 			}
 			arrayMarker.push(marker);
 
-			drawingThePathWithLatLong(element, map);
+			pathDraw = drawingThePathWithLatLong(element, map, pathDraw);
 		});
 	}
 
@@ -919,12 +1017,21 @@ function drawLandslide(modeSlideSea, modeSlideRiver, map) {
 			}
 			arrayMarker.push(marker);
 
-			drawingThePathWithLatLong(element, map);
+			pathDraw = drawingThePathWithLatLong(element, map, pathDraw);
 		});
 	}
+
+	const obj = {
+		map,
+		arrayMarker,
+		pathDraw
+	};
+	return obj;
 }
 
-function hidenLandslide() {
+function hidenLandslide(arrayMarker, pathDraw) {
+	console.log("arrayMarker: ", arrayMarker);
+	console.log("pathDraw: ", pathDraw);
 	arrayMarker.forEach((element, index) => {
 		arrayMarker[index].setMap(null);
 	});
